@@ -1,159 +1,155 @@
-# Multi-Agent Research Assistant
+# Assistant de Recherche Multi-Agent
 
-A production-quality multi-agent system built with [LangGraph](https://github.com/langchain-ai/langgraph) that automates research, writing, and editorial review through coordinated AI agents.
+Un système multi-agent de qualité production construit avec [LangGraph](https://github.com/langchain-ai/langgraph) qui automatise la recherche, la rédaction et la révision éditoriale grâce à des agents IA coordonnés.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    SUP((Supervisor))
+    SUP((Superviseur))
 
     subgraph Agents
-        RES["Researcher\n(web search + summarize)"]
-        WRI["Writer\n(draft / revise)"]
-        REV["Reviewer\n(critique + verdict)"]
+        RES["Chercheur\n(recherche web + résumé)"]
+        WRI["Rédacteur\n(brouillon / révision)"]
+        REV["Réviseur\n(critique + verdict)"]
     end
 
     SUP -->|route| RES
     SUP -->|route| WRI
     SUP -->|route| REV
     RES -->|notes| SUP
-    WRI -->|draft| SUP
+    WRI -->|brouillon| SUP
     REV -->|verdict| SUP
-    SUP -->|complete| FIN([FINISH])
+    SUP -->|terminé| FIN([FINISH])
 ```
 
-### Agent Roles
+### Rôles des Agents
 
-| Agent | Role | Tools |
+| Agent | Rôle | Outils |
 |---|---|---|
-| **Supervisor** | Inspects shared state and routes work to the appropriate specialist agent. Decides when the task is complete. | None (LLM-based routing) |
-| **Researcher** | Gathers information from the web relevant to the user's query and distils it into structured notes. | `web_search` (Tavily), `summarize` |
-| **Writer** | Transforms research notes into a polished, well-structured report. Incorporates reviewer feedback on revisions. | LLM generation |
-| **Reviewer** | Critiques the draft for accuracy, clarity, and completeness. Issues an **ACCEPT** or **REVISE** verdict. | LLM evaluation |
+| **Superviseur** | Inspecte l'état partagé et dirige le travail vers l'agent spécialiste approprié. Décide quand la tâche est terminée. | Aucun (routage basé sur LLM) |
+| **Chercheur** | Collecte des informations sur le web en rapport avec la requête de l'utilisateur et les condense en notes structurées. | `web_search` (Tavily), `summarize` |
+| **Rédacteur** | Transforme les notes de recherche en un rapport soigné et bien structuré. Intègre les retours du réviseur lors des révisions. | Génération LLM |
+| **Réviseur** | Critique le brouillon pour son exactitude, sa clarté et son exhaustivité. Émet un verdict **ACCEPT** ou **REVISE**. | Évaluation LLM |
 
-### Key Patterns
+### Patterns Clés
 
-- **Supervisor routing** -- a central coordinator node uses conditional edges to dispatch work, avoiding brittle hard-coded pipelines.
-- **Human-in-the-loop** -- the graph can be paused before the reviewer node using LangGraph's `interrupt_before` mechanism, allowing a human to inject feedback.
-- **Tool use** -- the researcher agent calls external tools (`web_search`, `summarize`) to gather and condense information.
-- **Multi-provider LLM** -- switch between OpenAI and Anthropic with a single environment variable.
-- **Iterative refinement** -- the writer-reviewer loop runs up to 3 revision cycles, ensuring output quality.
+- **Routage par superviseur** -- un nœud coordinateur central utilise des arêtes conditionnelles pour dispatcher le travail, évitant des pipelines rigides codés en dur.
+- **Humain dans la boucle** -- le graphe peut être mis en pause avant le nœud réviseur grâce au mécanisme `interrupt_before` de LangGraph, permettant à un humain d'injecter des retours.
+- **Utilisation d'outils** -- l'agent chercheur appelle des outils externes (`web_search`, `summarize`) pour collecter et condenser les informations.
+- **LLM multi-fournisseurs** -- basculez entre OpenAI et Anthropic avec une seule variable d'environnement.
+- **Raffinement itératif** -- la boucle rédacteur-réviseur s'exécute jusqu'à 3 cycles de révision, garantissant la qualité du résultat.
 
-## Quick Start
+## Démarrage Rapide
 
 ```bash
-# Clone the repository
-git clone https://github.com/<your-username>/langgraph-multi-agent.git
+# Cloner le dépôt
+git clone https://github.com/<votre-username>/langgraph-multi-agent.git
 cd langgraph-multi-agent
 
-# Set up environment
+# Configurer l'environnement
 cp .env-template .env
-# Edit .env with your API keys
+# Modifier .env avec vos clés API
 
-# Install dependencies with uv
+# Installer les dépendances avec uv
 uv sync
 
-# Run a research query
-uv run python main.py "What are the latest breakthroughs in quantum computing?"
+# Lancer une requête de recherche
+uv run python main.py "Quelles sont les dernières avancées en informatique quantique ?"
 
-# Verbose mode (full agent output)
-uv run python main.py --verbose "Explain the current state of nuclear fusion energy"
+# Mode verbeux (sortie complète des agents)
+uv run python main.py --verbose "Expliquer l'état actuel de l'énergie de fusion nucléaire"
 ```
 
-## Environment Variables
+## Variables d'Environnement
 
-| Variable | Required | Description |
+| Variable | Obligatoire | Description |
 |---|---|---|
-| `OPENAI_API_KEY` | Yes (if `LLM_PROVIDER=openai`) | OpenAI API key |
-| `ANTHROPIC_API_KEY` | Yes (if `LLM_PROVIDER=anthropic`) | Anthropic API key |
-| `LLM_PROVIDER` | No | `openai` (default) or `anthropic` |
-| `TAVILY_API_KEY` | Yes | [Tavily](https://tavily.com/) API key for web search |
+| `OPENAI_API_KEY` | Oui (si `LLM_PROVIDER=openai`) | Clé API OpenAI |
+| `ANTHROPIC_API_KEY` | Oui (si `LLM_PROVIDER=anthropic`) | Clé API Anthropic |
+| `LLM_PROVIDER` | Non | `openai` (défaut) ou `anthropic` |
+| `TAVILY_API_KEY` | Oui | Clé API [Tavily](https://tavily.com/) pour la recherche web |
 
-## Example Usage
+## Exemple d'Utilisation
 
 ```bash
-$ uv run python main.py "Compare React and Svelte for building modern web apps"
+$ uv run python main.py "Comparer React et Svelte pour construire des applications web modernes"
 
 ============================================================
-  Research query: Compare React and Svelte for building modern web apps
+  Requête de recherche : Comparer React et Svelte pour construire des applications web modernes
 ============================================================
 
---- [SUPERVISOR] ---
-[Supervisor] Routing to: researcher
+--- [SUPERVISEUR] ---
+[Superviseur] Routage vers : chercheur
 
---- [RESEARCHER] ---
-[Researcher] Gathered notes:
-- React uses a virtual DOM; Svelte compiles to vanilla JS at build time
-- React has a larger ecosystem and job market
-- Svelte offers smaller bundle sizes and simpler syntax
+--- [CHERCHEUR] ---
+[Chercheur] Notes collectées :
+- React utilise un DOM virtuel ; Svelte compile en JS vanilla lors du build
+- React a un écosystème et un marché de l'emploi plus larges
+- Svelte offre des bundles plus légers et une syntaxe plus simple
 ...
 
---- [SUPERVISOR] ---
-[Supervisor] Routing to: writer
+--- [SUPERVISEUR] ---
+[Superviseur] Routage vers : rédacteur
 
---- [WRITER] ---
-[Writer] Draft produced (2847 chars)
+--- [RÉDACTEUR] ---
+[Rédacteur] Brouillon produit (2847 caractères)
 
---- [SUPERVISOR] ---
-[Supervisor] Routing to: reviewer
+--- [SUPERVISEUR] ---
+[Superviseur] Routage vers : réviseur
 
---- [REVIEWER] ---
-[Reviewer] Verdict: ACCEPT
+--- [RÉVISEUR] ---
+[Réviseur] Verdict : ACCEPT
 ...
 
 ============================================================
-  FINAL REPORT
+  RAPPORT FINAL
 ============================================================
 
-## React vs. Svelte: A Comparative Analysis
+## React vs. Svelte : Une Analyse Comparative
 ...
 ```
 
 ## Docker
 
 ```bash
-docker build -t research-assistant .
-docker run --env-file .env research-assistant "Your research query here"
+docker build -t assistant-recherche .
+docker run --env-file .env assistant-recherche "Votre requête de recherche ici"
 ```
 
-## Tech Stack
+## Stack Technique
 
-| Component | Technology |
+| Composant | Technologie |
 |---|---|
 | Orchestration | [LangGraph](https://github.com/langchain-ai/langgraph) |
 | LLM (OpenAI) | GPT-4o via `langchain-openai` |
 | LLM (Anthropic) | Claude Sonnet 4.5 via `langchain-anthropic` |
-| Web Search | [Tavily](https://tavily.com/) via `langchain-community` |
+| Recherche Web | [Tavily](https://tavily.com/) via `langchain-community` |
 | Configuration | `python-dotenv` + `pydantic` |
-| Build System | [Hatch](https://hatch.pypa.io/) |
-| Package Manager | [uv](https://github.com/astral-sh/uv) |
-| Containerisation | Docker (Python 3.12 slim) |
+| Système de Build | [Hatch](https://hatch.pypa.io/) |
+| Gestionnaire de Paquets | [uv](https://github.com/astral-sh/uv) |
+| Conteneurisation | Docker (Python 3.12 slim) |
 
-## Project Structure
+## Structure du Projet
 
 ```
 langgraph-multi-agent/
 ├── agents/
 │   ├── __init__.py
-│   ├── config.py      # Multi-provider LLM configuration
-│   ├── graph.py       # LangGraph StateGraph definition
-│   └── tools.py       # Custom tools (web search, summarize)
-├── main.py            # CLI entry point
-├── pyproject.toml     # Project metadata and dependencies
-├── Dockerfile         # Container build
-├── .env-template      # Environment variable template
+│   ├── config.py      # Configuration LLM multi-fournisseurs
+│   ├── graph.py       # Définition du StateGraph LangGraph
+│   └── tools.py       # Outils personnalisés (recherche web, résumé)
+├── main.py            # Point d'entrée CLI
+├── pyproject.toml     # Métadonnées et dépendances du projet
+├── Dockerfile         # Build du conteneur
+├── .env-template      # Modèle de variables d'environnement
 └── .gitignore
 ```
 
+## Mes Améliorations
 
-## My Improvements
+- Étude de l'architecture multi-agent LangGraph
+- Analyse du système de routage basé sur un superviseur
+- Extension du projet avec des modules d'expérimentation personnalisés
+- Meilleure compréhension des patterns d'orchestration LLM
 
-- Studied multi-agent LangGraph architecture
-- Analyzed supervisor-based routing system
-- Extended project with custom experimentation modules
-- Improved understanding of LLM orchestration patterns
-
-## License
-
-MIT

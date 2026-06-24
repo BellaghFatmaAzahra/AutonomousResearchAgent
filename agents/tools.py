@@ -1,70 +1,79 @@
-"""Custom tools available to the research assistant agents."""
+"""Outils personnalisés disponibles pour les agents de l'assistant de recherche."""
 
 from __future__ import annotations
 
+import os
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.tools import tool
-
 from agents.config import get_llm
 
 
+# =========================
+# OUTIL DE RECHERCHE WEB (TAVILY)
+# =========================
 @tool
 def web_search(query: str) -> str:
-    """Search the web for up-to-date information using the Tavily API.
+    """Rechercher sur le web via l'API Tavily."""
 
-    Parameters
-    ----------
-    query:
-        The search query string.
+    from langchain_tavily import TavilySearch
 
-    Returns
-    -------
-    str
-        Formatted search results with titles, URLs, and content snippets.
-    """
-    # Lazy import so the dependency is only required at runtime when the tool
-    # is actually invoked (Tavily is provided by langchain-community).
-    from langchain_community.tools.tavily_search import TavilySearchResults
+    if not os.getenv("TAVILY_API_KEY"):
+        return "ERREUR : TAVILY_API_KEY manquante dans l'environnement (.env)."
 
-    search = TavilySearchResults(max_results=5)
-    results = search.invoke(query)
+    # TavilySearch lit TAVILY_API_KEY depuis l'env automatiquement
+    search = TavilySearch(max_results=5)
+
+    # .invoke() attend un dict {"query": ...}
+    raw = search.invoke({"query": query})
+
+    # Normaliser la sortie (Tavily peut retourner dict/list/str)
+    if isinstance(raw, dict):
+        results = raw.get("results", [])
+    elif isinstance(raw, list):
+        results = raw
+    else:
+        return str(raw)
 
     if not results:
-        return "No results found."
+        return "Aucun résultat trouvé."
 
-    formatted: list[str] = []
-    for idx, result in enumerate(results, 1):
-        title = result.get("title", "Untitled")
-        url = result.get("url", "")
-        content = result.get("content", "")
-        formatted.append(f"[{idx}] {title}\n    {url}\n    {content}")
+    formatted_results = []
 
-    return "\n\n".join(formatted)
+    for i, r in enumerate(results, 1):
+        if isinstance(r, dict):
+            title = r.get("title", "Sans titre")
+            url = r.get("url", "")
+            content = r.get("content", "")
+        else:
+            title = "Résultat"
+            url = ""
+            content = str(r)
+
+        formatted_results.append(
+            f"[{i}] {title}\n{url}\n{content}"
+        )
+
+    return "\n\n".join(formatted_results)
 
 
+# =========================
+# OUTIL DE RÉSUMÉ
+# =========================
 @tool
 def summarize(text: str) -> str:
-    """Produce a concise summary of the provided text using the configured LLM.
+    """Résumer un texte via le LLM configuré."""
 
-    Parameters
-    ----------
-    text:
-        The text to summarise.
-
-    Returns
-    -------
-    str
-        A concise summary.
-    """
     llm = get_llm(temperature=0.0)
+
     messages = [
         SystemMessage(
             content=(
-                "You are a concise summariser. Distil the following text into "
-                "its key points using no more than five bullet points."
+                "Tu es un assistant spécialisé dans la synthèse concise. "
+                "Résume le texte en 5 points maximum."
             )
         ),
         HumanMessage(content=text),
     ]
+
     response = llm.invoke(messages)
     return response.content

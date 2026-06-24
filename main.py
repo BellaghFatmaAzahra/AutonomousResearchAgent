@@ -1,4 +1,4 @@
-"""CLI entry point for the multi-agent research assistant."""
+"""Point d'entrée CLI pour l'assistant de recherche multi-agent."""
 
 from __future__ import annotations
 

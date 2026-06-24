@@ -1,20 +1,20 @@
 FROM python:3.12-slim AS base
 
-# Install uv for fast dependency management
+# Installer uv pour une gestion rapide des dépendances
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 WORKDIR /app
 
-# Copy dependency specification first for better layer caching
+# Copier la spécification des dépendances en premier pour un meilleur cache des couches
 COPY pyproject.toml ./
 
-# Install production dependencies
+# Installer les dépendances de production
 RUN uv sync --no-dev --no-install-project
 
-# Copy application code
+# Copier le code de l'application
 COPY . .
 
-# Install the project itself
+# Installer le projet lui-même
 RUN uv sync --no-dev
 
 ENTRYPOINT ["uv", "run", "python", "main.py"]
